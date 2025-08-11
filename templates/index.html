@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Documento Cotação</title>
+<style>
+  @page {
+    size: A4;
+    margin: 5mm; /* margem reduzida para mais espaço */
+  }
+
+  body {
+    font-family: Arial, sans-serif;
+    background: #fff;
+    margin: 0;
+    padding: 5mm; /* padding menor para aumentar área */
+    display: flex;
+    justify-content: center;
+  }
+
+  .pdf-button {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 999;
+    padding: 8px 14px;
+    background: #4a7cb8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .container {
+    width: 200mm; /* 210mm - 2*5mm padding */
+    height: 287mm; /* 297mm - 2*5mm padding */
+    border: 1px solid #444;
+    padding: 10px 20px;
+    box-sizing: border-box;
+    background: white;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Cabeçalho */
+  .header {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid #444;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: black;
+    padding: 5px;
+  }
+
+  .logo img {
+    height: auto;
+    width: 150px;
+  }
+
+  .header-info {
+    flex-grow: 1;
+    border-left: 1px solid #444;
+    padding: 5px 10px;
+    font-size: 12px;
+    line-height: 1.3;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .header-info .line {
+    border-bottom: 1px solid #ccc;
+    padding: 2px 0;
+  }
+
+  .header-info .label {
+    text-decoration: underline;
+    font-weight: bold;
+    margin-right: 3px;
+  }
+
+  .header-quote {
+    width: 150px;
+    border-left: 1px solid #444;
+    padding: 10px 5px;
+    font-size: 13px;
+    color: #4a7cb8;
+    font-weight: 700;
+    text-align: center;
+    font-family: 'Arial Black', Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .header-quote small {
+    font-weight: 400;
+    font-size: 11px;
+    color: black;
+    margin-top: 6px;
+  }
+
+  .header-quote .date {
+    margin-top: 10px;
+    font-weight: 400;
+    font-size: 12px;
+    color: black;
+  }
+
+  /* Info cliente */
+  .client-info {
+    border: 1px solid #444;
+    border-top: none;
+    font-size: 12px;
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .client-info td,
+  .client-info th {
+    border: 1px solid #444;
+    padding: 4px 6px;
+  }
+
+  .client-info th {
+    background: #eee;
+    font-weight: bold;
+    text-align: left;
+    white-space: nowrap;
+    width: 110px;
+  }
+
+  /* Tabela de itens */
+  table.items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-top: 5px;
+  }
+
+  table.items-table th,
+  table.items-table td {
+    border: 1px solid #444;
+    padding: 5px 6px;
+    text-align: center;
+  }
+
+  table.items-table th {
+    background: #eee;
+    font-weight: bold;
+    font-size: 13px;
+  }
+
+  .col-item { width: 20px; color: #c12d2d; font-weight: bold; }
+  .col-un { width: 50px; }
+  .col-qtd { width: 50px; }
+  .col-ncm { width: 70px; }
+  .col-produto { 
+    text-align: left; 
+    padding-left: 10px; 
+    width: 500px; /* coluna aumentada para mais espaço */
+    cursor: pointer;
+    position: relative;
+  }
+  .col-unitario, .col-subtotal { width: 50px; }
+
+  td[contenteditable="true"] {
+    background-color: #fdfdfd;
+  }
+
+  .col-produto select {
+    width: 100%;
+    box-sizing: border-box; /* para incluir padding e border na largura */
+    padding: 2px 6px; /* para alinhamento visual */
+    font-size: 12px; /* combinar com o resto da tabela */
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    border: 1px solid #888;
+    display: none;
+    background: white;
+    z-index: 10;
+    cursor: pointer;
+  }
+
+  .lower-block {
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .line-item {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 4px;
+  }
+
+  .label {
+    width: 160px; /* largura fixa para alinhamento */
+    font-weight: bold;
+    text-align: left;
+  }
+
+  .value {
+    text-align: left;
+  }
+
+  .muted { color: #666; }
+  .accent { color: #c12d2d; font-weight: bold; }
+
+  /* Rodapé alinhado à direita */
+  .bottom-note-row {
+    text-align: right;
+    padding: 2px 10px 4px 10px;
+    font-size: 11px;
+    padding-top: 50px;
+  }
+  
+@media print {
+  #add-row-btn {
+    display: none !important;
+  }
+  .pdf-button {
+    display: none !important;
+  }
+}
+
+</style>
+</head>
+<body>
+
+<button class="pdf-button" onclick="generatePDF()">Gerar PDF</button>
+
+<div class="container" id="form-container">
+
+  <!-- Cabeçalho -->
+  <div class="header">
+    <div class="logo">
+      <img src="../Files/DS-Logo.png" alt="LOGO DS Grupo" />
+    </div>
+    <div class="header-info">
+      <div class="line"><span class="label">DANIEL SANTOS ( DS GRUPO )</span></div>
+      <div class="line"><span class="label">CNPJ:</span> 53.686.899.0001-04</div>
+      <div class="line"><span class="label">INSC. EST.</span> 14.399.623</div>
+      <div class="line"><span class="label">ANGRA DOS REIS - RJ</span></div>
+      <div class="line"><span class="label">CONTATO:</span> DANIEL SANTOS</div>
+      <div class="line"><span class="label">WHATSAPP:</span> (24) 99911 - 1553</div>
+      <div class="line"><span class="label">E-MAIL:</span> ds.grupo@hotmail.com</div>
+    </div>
+    <div class="header-quote">
+      COTAÇÃO Nº
+      <small>DADOS DA COTAÇÃO</small>
+      <div class="date">11/08/2025</div>
+    </div>
+  </div>
+
+  <!-- Cliente -->
+  <table class="client-info">
+    <tbody>
+      <tr><th>CLIENTE:</th><td>ELETRONUCLEAR S.A</td></tr>
+      <tr><th>COTAÇÃO</th><td>DADOS DA COTAÇÃO</td></tr>
+      <tr><th>ENDEREÇO:</th><td>ITAORNA, ANGRA DOS REIS - RJ</td></tr>
+      <tr><th>CONTATO:</th><td>LUIZ FELIPE</td></tr>
+      <tr><th>E-MAIL:</th><td><a href="mailto:lmendes@eletronuclear.gov.br">lmendes@eletronuclear.gov.br</a></td></tr>
+    </tbody>
+  </table>
+
+  <!-- Itens -->
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th class="col-item">ITEM</th>
+        <th class="col-un" contenteditable="true">UN</th>
+        <th class="col-qtd" contenteditable="true">QTD</th>
+        <th class="col-ncm">NCM</th>
+        <th class="col-produto">PRODUTO / MODELO / MARCA</th>
+        <th class="col-unitario" contenteditable="true">UNITÁRIO</th>
+        <th class="col-subtotal" contenteditable="true">SUBTOTAL</th>
+      </tr>
+    </thead>
+    <tbody id="table-body">
+        {% for i in range(1, 2) %}
+        <tr>
+            <td class="col-item">{{ "%02d"|format(i) }}</td>
+            <td class="col-un" onclick="showSelect(this)">
+            <span class="text-placeholder"></span>
+            <select onchange="selectUnit(this)">
+                <option value="">---</option>
+                {% for unit in units %}
+                <option value="{{ unit }}">{{ unit }}</option>
+                {% endfor %}
+            </select>
+            </td>
+
+            <td class="col-qtd" contenteditable="true"></td>
+            <td class="col-ncm"></td>
+            <td class="col-produto" onclick="showSelect(this)">
+            <span class="text-placeholder"></span>
+            <select onchange="selectOption(this)">
+                <option value="">---</option>
+                {% for prod in products %}
+                <option value="{{ prod }}">{{ prod }}</option>
+                {% endfor %}
+            </select>
+            </td>
+            <td class="col-unitario" contenteditable="true"></td>
+            <td class="col-subtotal" contenteditable="true"></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+  </table>
+
+  <!-- Linha VALOR TOTAL -->
+  <div style="
+    display: flex;
+    border: 1px solid #444;
+    padding: 5px 10px;
+    font-weight: bold;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 10px;
+    ">
+    <div style="flex: 1; text-align: center; border-right: 1px solid #444;">
+      VALOR TOTAL:
+    </div>
+    <div style="width: 120px; text-align: right; padding-left: 10px;">
+        <span id="total-value" contenteditable="true" style="display:inline-block; min-width: 60px; border-bottom: 1px dashed #999; outline: none; cursor: text;">0</span>
+    </div>
+  </div>
+  <br>
+  <!-- Seção final -->
+  <div class="lower-block">
+    <div class="line-item">
+      <span class="label">PRAZO DE ENTREGA:</span>
+      <span class="value" contenteditable="true">&emsp; &emsp; CIF - ATÉ 15 DIAS</span>
+    </div>
+    <div class="line-item">
+      <span class="label">FORMA DE PAGAMENTO:</span>
+      <span class="value" contenteditable="true">&emsp; &emsp; 30 DDL</span>
+    </div>
+    <div class="line-item">
+      <span class="label accent">VALIDADE DA PROPOSTA:</span>
+      <span class="value accent" contenteditable="true">&emsp; &emsp; 30 DIAS CORRIDOS</span>
+    </div>
+
+    <div class="bottom-note-row">
+      Tudo o que você busca, com eficiência e confiança.
+    </div>
+  </div>
+
+
+    <button id="add-row-btn" style="margin-top: 8px; padding: 6px 12px; font-size: 14px; cursor: pointer;">Adicionar linha</button>
+
+</div>
+
+<!-- Lib PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!--<script src="{{ url_for('static', filename='cota.js') }}"></script>-->
+
+
+<script>
+  // Atualiza data da cotação para a data atual no formato DD/MM/AAAA
+  function updateQuoteDate() {
+    const dateElem = document.querySelector('.header-quote .date');
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    dateElem.textContent = `${day}/${month}/${year}`;
+  }
+
+  updateQuoteDate();
+
+  // Objeto com produtos e respectivos NCM, gerado pelo backend
+  const productsData = {
+    {% for prod in products_data %}
+    "{{ prod.product }}": "{{ prod.ncm }}"{{ "," if not loop.last else "" }}
+    {% endfor %}
+  };
+  console.log("productsData:", productsData);
+
+  // Mostrar o select quando clicar na célula
+function showSelect(td) {
+  const select = td.querySelector('select');
+  const span = td.querySelector('.text-placeholder');
+  if (select.style.display === 'none' || select.style.display === '') {
+    span.style.display = 'none';
+    select.style.display = 'inline-block';
+    select.focus();
+  }
+}
+
+  // Quando escolher uma opção no select
+function selectOption(select) {
+  const td = select.parentElement;
+  const span = td.querySelector('.text-placeholder');
+  const val = select.value;
+
+  if (val) {
+    span.textContent = val;
+    span.style.display = 'inline';
+    select.style.display = 'none';
+
+    // Se for produto, busca NCM e valor
+    if (td.classList.contains('col-produto')) {
+      const tr = td.parentElement;
+      fetch('/get_ncm?product=' + encodeURIComponent(val))
+        .then(response => response.json())
+        .then(data => {
+          const tdNcm = tr.querySelector('.col-ncm');
+          const tdUnitario = tr.querySelector('.col-unitario');
+
+          if (tdNcm) tdNcm.textContent = data.ncm || '';
+          if (tdUnitario) {
+            tdUnitario.textContent = data.value !== null
+              ? data.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              : '';
+          }
+
+          updateSubtotal(tr);
+        })
+        .catch(err => {
+          console.error(err);
+          const tr = td.parentElement;
+          const tdNcm = tr.querySelector('.col-ncm');
+          const tdUnitario = tr.querySelector('.col-unitario');
+          if (tdNcm) tdNcm.textContent = 'Erro';
+          if (tdUnitario) tdUnitario.textContent = '';
+          updateSubtotal(tr);
+        });
+    }
+  } else {
+    span.textContent = '';
+    span.style.display = 'none';
+    select.style.display = 'inline-block';
+    select.focus();
+
+    if (td.classList.contains('col-produto')) {
+      const tr = td.parentElement;
+      const tdNcm = tr.querySelector('.col-ncm');
+      const tdUnitario = tr.querySelector('.col-unitario');
+      if (tdNcm) tdNcm.textContent = '';
+      if (tdUnitario) tdUnitario.textContent = '';
+      updateSubtotal(tr);
+    }
+  }
+}
+
+  // Inicializa selects escondidos e spans vazios
+  window.onload = function() {
+    document.querySelectorAll('.col-produto').forEach(td => {
+      const select = td.querySelector('select');
+      const span = td.querySelector('.text-placeholder');
+      span.textContent = '';
+      span.style.display = 'none';
+      select.style.display = 'none';
+    });
+  };
+
+  // Função para atualizar subtotal ao alterar QTD ou UNITÁRIO
+  function updateSubtotal(tr) {
+    const tdQtd = tr.querySelector('.col-qtd');
+    const tdUnitario = tr.querySelector('.col-unitario');
+    const tdSubtotal = tr.querySelector('.col-subtotal');
+
+    // Extrai números das células, converte para inteiro e float
+    let qtd = tdQtd.textContent.replace(/\D/g, '');
+    qtd = qtd ? parseInt(qtd, 10) : 0;
+
+    // Substitui pontos e vírgula para converter string em número float
+    let unitarioText = tdUnitario.textContent.trim().replace(/\./g, '').replace(',', '.');
+    let unitario = parseFloat(unitarioText);
+    if (isNaN(unitario)) unitario = 0;
+
+    let subtotal = qtd * unitario;
+
+    // Formata para moeda BRL ou deixa vazio se 0
+    tdSubtotal.textContent = subtotal > 0
+      ? subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : '';
+  }
+
+  // Adiciona evento para detectar mudanças em QTD e UNITÁRIO
+  function addListeners() {
+    document.querySelectorAll('tbody#table-body tr').forEach(tr => {
+      const tdQtd = tr.querySelector('.col-qtd');
+      const tdUnitario = tr.querySelector('.col-unitario');
+
+      [tdQtd, tdUnitario].forEach(td => {
+        td.addEventListener('input', () => updateSubtotal(tr));
+        // Impede Enter criar quebra de linha
+        td.addEventListener('keydown', e => {
+          if (e.key === 'Enter') e.preventDefault();
+        });
+      });
+    });
+  }
+
+  // Formatar automaticamente a coluna QTD com zeros à esquerda
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.col-qtd').forEach(cell => {
+      cell.addEventListener('input', function () {
+        // Mantém apenas números
+        let val = this.textContent.replace(/\D/g, '');
+
+        if (val.length === 0) {
+          this.textContent = '';
+          updateSubtotal(this.parentElement);
+          return;
+        }
+
+        // Se tiver menos de 3 dígitos → coloca zeros à esquerda até 3
+        if (val.length < 3) {
+          val = val.padStart(3, '0');
+        }
+        // Se tiver mais de 3 dígitos → coloca zero à esquerda até 4
+        else if (val.length < 4) {
+          val = val.padStart(4, '0');
+        }
+
+        this.textContent = val;
+        updateSubtotal(this.parentElement);
+      });
+
+      // Impede que o Enter crie quebras de linha
+      cell.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') e.preventDefault();
+      });
+    });
+
+    addListeners();
+  });
+
+  // Gera PDF da cotação
+    function generatePDF() {
+        const element = document.getElementById('form-container');
+        const addRowBtn = document.getElementById('add-row-btn');
+        const pdfBtn = document.querySelector('.pdf-button');
+
+        // Esconder os botões antes de gerar PDF
+        addRowBtn.style.display = 'none';
+        pdfBtn.style.display = 'none';
+
+        const opt = {
+            margin: 0,
+            filename: 'cotacao.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, scrollY: 0 }, // scrollY 0 ajuda capturar topo
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf()
+            .from(element)
+            .set(opt)
+            .save()
+            .then(() => {
+            // Mostrar os botões novamente após salvar o PDF
+            addRowBtn.style.display = 'inline-block';
+            pdfBtn.style.display = 'inline-block';
+            });
+        }
+
+
+
+// Carregar unidades e preencher selects da coluna UN
+function loadUnits() {
+  fetch('/get_units')
+    .then(res => res.json())
+    .then(units => {
+      document.querySelectorAll('.col-un').forEach(td => {
+        const select = td.querySelector('select');
+        select.innerHTML = '<option value="">---</option>';
+        units.forEach(unit => {
+          const opt = document.createElement('option');
+          opt.value = unit;
+          opt.textContent = unit;
+          select.appendChild(opt);
+        });
+        td.querySelector('.text-placeholder').textContent = '';
+        select.style.display = 'none';
+      });
+    })
+    .catch(err => console.error('Erro ao carregar unidades:', err));
+}
+
+function showSelect(td) {
+  const select = td.querySelector('select');
+  const span = td.querySelector('.text-placeholder');
+  if (select.style.display === 'none' || select.style.display === '') {
+    span.style.display = 'none';
+    select.style.display = 'inline-block';
+    select.focus();
+  }
+}
+
+function selectUnit(select) {
+  const td = select.parentElement;
+  const span = td.querySelector('.text-placeholder');
+  const val = select.value;
+
+  if (val) {
+    span.textContent = val;
+    span.style.display = 'inline';
+    select.style.display = 'none';
+  } else {
+    span.textContent = '';
+    span.style.display = 'none';
+    select.style.display = 'inline-block';
+    select.focus();
+  }
+}
+
+// Inicialização ao carregar DOM
+document.addEventListener('DOMContentLoaded', () => {
+  loadUnits();
+
+  // Inicializa selects e spans da coluna PRODUTO se necessário
+  document.querySelectorAll('.col-produto').forEach(td => {
+    const select = td.querySelector('select');
+    const span = td.querySelector('.text-placeholder');
+    span.textContent = '';
+    span.style.display = 'none';
+    select.style.display = 'none';
+  });
+});
+
+function addNewRow() {
+  const tbody = document.getElementById('table-body');
+  const rows = tbody.querySelectorAll('tr');
+  const lastRow = rows[rows.length - 1];
+  const newRow = lastRow.cloneNode(true); // clona a última linha inteira com filhos
+
+  // Atualizar o número do item para o próximo
+  const newIndex = rows.length + 1;
+  newRow.querySelector('.col-item').textContent = newIndex.toString().padStart(2, '0');
+
+  // Resetar valores das células editáveis
+  newRow.querySelector('.col-un .text-placeholder').textContent = '';
+  newRow.querySelector('.col-un select').value = '';
+  newRow.querySelector('.col-un select').style.display = 'none';
+
+  newRow.querySelector('.col-qtd').textContent = '';
+  newRow.querySelector('.col-ncm').textContent = '';
+  
+  newRow.querySelector('.col-produto .text-placeholder').textContent = '';
+  newRow.querySelector('.col-produto select').value = '';
+  newRow.querySelector('.col-produto select').style.display = 'none';
+
+  newRow.querySelector('.col-unitario').textContent = '';
+  newRow.querySelector('.col-subtotal').textContent = '';
+
+  // Adicionar event listeners para os novos elementos da linha
+
+  // Para selects na coluna UN
+  const unSelect = newRow.querySelector('.col-un select');
+  const unSpan = newRow.querySelector('.col-un .text-placeholder');
+  unSpan.style.display = 'none';
+  unSelect.style.display = 'none';
+
+  // Para selects na coluna PRODUTO
+  const prodSelect = newRow.querySelector('.col-produto select');
+  const prodSpan = newRow.querySelector('.col-produto .text-placeholder');
+  prodSpan.style.display = 'none';
+  prodSelect.style.display = 'none';
+
+  // Adiciona clique para mostrar select nas colunas UN e PRODUTO
+  newRow.querySelector('.col-un').onclick = function() {
+    showSelect(this);
+  };
+  newRow.querySelector('.col-produto').onclick = function() {
+    showSelect(this);
+  };
+
+  // Evento onchange para selects UN
+  unSelect.onchange = function() {
+    selectUnit(this);
+  };
+
+  // Evento onchange para selects PRODUTO
+  prodSelect.onchange = function() {
+    selectOption(this);
+  };
+
+  // Eventos input para QTD e UNITÁRIO para recalcular subtotal
+  const tdQtd = newRow.querySelector('.col-qtd');
+  const tdUnitario = newRow.querySelector('.col-unitario');
+
+  // Limpar listeners antigos, adiciona novos
+  tdQtd.oninput = () => updateSubtotal(newRow);
+  tdQtd.onkeydown = (e) => { if(e.key === 'Enter') e.preventDefault(); };
+
+  tdUnitario.oninput = () => updateSubtotal(newRow);
+  tdUnitario.onkeydown = (e) => { if(e.key === 'Enter') e.preventDefault(); };
+
+  // Formatar QTD com zeros à esquerda na nova linha
+  tdQtd.addEventListener('input', function () {
+    let val = this.textContent.replace(/\D/g, '');
+
+    if (val.length === 0) {
+      this.textContent = '';
+      updateSubtotal(this.parentElement);
+      return;
+    }
+    if (val.length < 3) {
+      val = val.padStart(3, '0');
+    } else if (val.length < 4) {
+      val = val.padStart(4, '0');
+    }
+    this.textContent = val;
+    updateSubtotal(this.parentElement);
+  });
+
+  tdQtd.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') e.preventDefault();
+  });
+
+  tbody.appendChild(newRow);
+}
+
+// Vincular botão ao evento de adicionar linha
+document.getElementById('add-row-btn').addEventListener('click', addNewRow);
+
+
+// Função para atualizar os números dos itens depois de remover linha
+function updateItemNumbers() {
+  const rows = document.querySelectorAll('#table-body tr');
+  rows.forEach((row, index) => {
+    const tdItem = row.querySelector('.col-item');
+    tdItem.textContent = (index + 1).toString().padStart(2, '0');
+  });
+}
+
+// Adiciona eventos aos botões existentes e futuros
+function attachRemoveListeners() {
+  document.querySelectorAll('.remove-row-btn').forEach(btn => {
+    btn.onclick = function(e) {
+      const row = e.target.closest('tr');
+      const tbody = row.parentElement;
+      tbody.removeChild(row);
+      updateItemNumbers();
+    }
+  });
+}
+
+function calcularTotal() {
+  const tbody = document.getElementById('table-body');
+  let total = 0;
+
+  // Pega todas as linhas da tabela
+  const linhas = tbody.querySelectorAll('tr');
+
+  linhas.forEach(linha => {
+    // Pega a célula da coluna subtotal (7ª coluna - índice 6)
+    const celSubtotal = linha.querySelectorAll('td')[6];
+    if (celSubtotal) {
+      // Pega o texto e remove espaços, vírgulas, converte para ponto decimal
+      let valorTexto = celSubtotal.textContent.trim().replace(/\./g, '').replace(',', '.');
+      
+      // Converte para número float
+      let valorNum = parseFloat(valorTexto);
+
+      if (!isNaN(valorNum)) {
+        total += valorNum;
+      }
+    }
+  });
+
+  // Formata para Real brasileiro com 2 casas decimais
+  const totalFormatado = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  // Atualiza o span total
+  document.getElementById('total-value').textContent = totalFormatado;
+}
+
+
+document.querySelectorAll('td.col-subtotal').forEach(td => {
+  td.addEventListener('input', calcularTotal);
+  td.addEventListener('blur', calcularTotal);
+});
+
+function verificarMostrarBotao() {
+  const botoesubtotal = Array.from(document.querySelectorAll('td.col-subtotal'));
+  const btnAddLinha = document.getElementById('add-row-btn');
+
+  // Verifica se pelo menos uma célula col-subtotal tem texto não vazio
+  const existeValor = botoesubtotal.some(td => td.textContent.trim() !== '');
+
+  if (existeValor) {
+    btnAddLinha.style.display = 'inline-block'; // mostra botão
+  } else {
+    btnAddLinha.style.display = 'none'; // esconde botão
+  }
+}
+
+// Associa o evento input ou blur para as células col-subtotal para disparar a verificação
+document.querySelectorAll('td.col-subtotal').forEach(td => {
+  td.addEventListener('input', () => {
+    verificarMostrarBotao();
+    calcularTotal();  // Se quiser recalcular total junto
+  });
+  td.addEventListener('blur', () => {
+    verificarMostrarBotao();
+    calcularTotal();
+  });
+});
+
+// Inicializa estado do botão ao carregar a página
+verificarMostrarBotao();
+
+</script>
+
+</body>
+</html>
