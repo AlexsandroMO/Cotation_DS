@@ -1,81 +1,34 @@
-# from flask import Flask, render_template, request, make_response
-# from fpdf import FPDF
-
-# app = Flask(__name__)
-
-# @app.route('/')
-# def index():
-#     return render_template('formulario.html')
-
-# @app.route('/generate_pdf', methods=['POST'])
-# def generate_pdf():
-#     nome = request.form.get('nome', 'Sem Nome')
-#     email = request.form.get('email', 'Sem Email')
-
-#     pdf = FPDF()
-#     pdf.add_page()
-#     pdf.set_font("Arial", size=16)
-#     pdf.cell(200, 10, txt="Formulário enviado", ln=1, align="C")
-#     pdf.ln(10)
-#     pdf.set_font("Arial", size=12)
-#     pdf.cell(200, 10, txt=f"Nome: {nome}", ln=1)
-#     pdf.cell(200, 10, txt=f"E-mail: {email}", ln=1)
-
-#     pdf_output = pdf.output(dest='S').encode('latin1')  # gerar PDF em memória
-
-#     response = make_response(pdf_output)
-#     response.headers.set('Content-Type', 'application/pdf')
-#     response.headers.set('Content-Disposition', 'attachment', filename='formulario.pdf')
-#     return response
-
-# if __name__ == '__main__':
-#     app.run(debug=True)
-
-
-
-
-# from flask import Flask, render_template
-# import sqlite3
-
-# app = Flask(__name__)
-
-# def get_products():
-#     conn = sqlite3.connect('cotation.db')
-#     cursor = conn.cursor()
-#     cursor.execute("SELECT product FROM BASE_COTATION ORDER BY product")
-#     rows = cursor.fetchall()
-#     conn.close()
-#     # Usar set para eliminar duplicados, depois ordenar
-#     unique_products = sorted(set(row[0] for row in rows))
-#     return unique_products
-
-# @app.route('/')
-# def index():
-#     products = get_products()
-#     return render_template('index.html', products=products)
-
-# if __name__ == '__main__':
-#     app.run(debug=True)
-
-
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 import sqlite3
 
 app = Flask(__name__)
 
+DB_NAME = "cotation.db"
+
+def get_db_connection():
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def get_products():
-    conn = sqlite3.connect('cotation.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT product FROM BASE_COTATION ORDER BY product")
     rows = cursor.fetchall()
     conn.close()
-    # Elimina duplicados e ordena
     unique_products = sorted(set(row[0] for row in rows))
     return unique_products
 
+def get_compradores():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT comprador FROM email_db ORDER BY comprador")
+    rows = cursor.fetchall()
+    conn.close()
+    return [row[0] for row in rows]
+
 def get_units():
-    conn = sqlite3.connect('cotation.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT unit FROM UN_BASE ORDER BY unit")
     rows = cursor.fetchall()
@@ -85,16 +38,13 @@ def get_units():
 @app.route('/get_ncm')
 def get_ncm():
     product = request.args.get('product')
-
     if not product:
         return jsonify({'ncm': '', 'value': None})
-
-    conn = sqlite3.connect('cotation.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT ncm, value FROM BASE_COTATION WHERE product = ?", (product,))
     row = cursor.fetchone()
     conn.close()
-
     if row:
         ncm, value = row
         return jsonify({
@@ -104,16 +54,103 @@ def get_ncm():
     else:
         return jsonify({'ncm': '', 'value': None})
 
+@app.route('/get_email')
+def get_email():
+    comprador = request.args.get('comprador')
+    if not comprador:
+        return jsonify({'email': ''})
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT email FROM email_db WHERE comprador = ?", (comprador,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if row and row[0]:
+        return jsonify({'email': row[0]})
+    else:
+        return jsonify({'email': ''})
+    
 @app.route('/')
 def index():
-    products = get_products()  # sua função já existente para produtos
-    units = get_units()        # nova função para unidades
-    return render_template('index.html', products=products, units=units)
+    conn = get_db_connection()
+    items = conn.execute("SELECT * FROM BASE_COTATION ORDER BY id DESC").fetchall()
+    conn.close()
+    products = get_products()
+    units = get_units()
+    compradores = get_compradores()   # <--- pegar compradores
+    return render_template('index.html', items=items, products=products, units=units, compradores=compradores)
+
+
+# >>> Aqui está a rota para "db_app", nome do endpoint é "db_app"
+@app.route('/db_app')
+def db_app():
+    conn = get_db_connection()
+    items = conn.execute("SELECT * FROM BASE_COTATION ORDER BY id DESC").fetchall()
+    conn.close()
+    products = get_products()
+    units = get_units()
+    return render_template('db-app.html', items=items, products=products, units=units)
+
+# Demais rotas add, edit, delete (mantidas iguais)...
+
+@app.route('/add', methods=['GET', 'POST'])
+def add():
+    if request.method == 'POST':
+        category = request.form['category']
+        product = request.form['product']
+        description = request.form['description']
+        ncm = request.form['ncm']
+        value = float(request.form['value'] or 0)
+        comments = request.form['comments'] or None
+
+        conn = get_db_connection()
+        conn.execute('''
+            INSERT INTO BASE_COTATION (category, product, description, ncm, value, comments)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (category, product, description, ncm, value, comments))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('index'))
+
+    products = get_products()
+    units = get_units()
+    return render_template('form.html', action="Adicionar", item=None, products=products, units=units)
+
+@app.route('/edit/<int:item_id>', methods=['GET', 'POST'])
+def edit(item_id):
+    conn = get_db_connection()
+    item = conn.execute("SELECT * FROM BASE_COTATION WHERE id = ?", (item_id,)).fetchone()
+
+    if request.method == 'POST':
+        category = request.form['category']
+        product = request.form['product']
+        description = request.form['description']
+        ncm = request.form['ncm']
+        value = float(request.form['value'] or 0)
+        comments = request.form['comments'] or None
+
+        conn.execute('''
+            UPDATE BASE_COTATION
+            SET category=?, product=?, description=?, ncm=?, value=?, comments=?
+            WHERE id=?
+        ''', (category, product, description, ncm, value, comments, item_id))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('index'))
+
+    conn.close()
+    products = get_products()
+    units = get_units()
+    return render_template('form.html', action="Editar", item=item, products=products, units=units)
+
+@app.route('/delete/<int:item_id>', methods=['POST'])
+def delete(item_id):
+    conn = get_db_connection()
+    conn.execute("DELETE FROM BASE_COTATION WHERE id=?", (item_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
-
     app.run(debug=True)
-
-
-
-
