@@ -1,7 +1,7 @@
 Flask
 fpdf
 pandas
-
+openpyxl
 
 
 

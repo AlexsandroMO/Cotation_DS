@@ -152,5 +152,54 @@ def delete(item_id):
     conn.close()
     return redirect(url_for('index'))
 
+
+@app.route('/email_db')
+def email_list():
+    conn = get_db_connection()
+    items = conn.execute("SELECT * FROM email_db ORDER BY id ASC").fetchall()
+    conn.close()
+    return render_template('email_list.html', items=items)
+
+@app.route('/email_db/add', methods=['GET', 'POST'])
+def add_email():
+    if request.method == 'POST':
+        comprador = request.form['comprador']
+        email = request.form['email'] or None
+
+        conn = get_db_connection()
+        conn.execute("INSERT INTO email_db (comprador, email) VALUES (?, ?)", (comprador, email))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('email_list'))
+
+    return render_template('email_form.html', action="Adicionar", item=None)
+
+@app.route('/email_db/edit/<int:email_id>', methods=['GET', 'POST'])
+def edit_email(email_id):
+    conn = get_db_connection()
+    item = conn.execute("SELECT * FROM email_db WHERE id = ?", (email_id,)).fetchone()
+
+    if request.method == 'POST':
+        comprador = request.form['comprador']
+
+        email = request.form['email'] or None
+
+        conn.execute("UPDATE email_db SET comprador=?, email=? WHERE id=?", (comprador, email, email_id))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('email_list'))
+
+    conn.close()
+    return render_template('email_form.html', action="Editar", item=item)
+
+@app.route('/email_db/delete/<int:email_id>', methods=['POST'])
+def delete_email(email_id):
+    conn = get_db_connection()
+    conn.execute("DELETE FROM email_db WHERE id=?", (email_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('email_list'))
+
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 if __name__ == '__main__':
     app.run(debug=True)

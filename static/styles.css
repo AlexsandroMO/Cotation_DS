@@ -1,5 +1,7 @@
 @page {
     size: A4;
+    height: 297mm;
+    overflow: hidden;
     margin: 5mm; /* margem reduzida para mais espaço */
   }
 
@@ -12,50 +14,28 @@
     justify-content: center;
   }
 
-  .pdf-button {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 999;
-    padding: 8px 14px;
-    background: #4a7cb8;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-
-    .app-button {
-    position: fixed;
-    top: 10px;
-    right: 110px;
-    z-index: 999;
-    padding: 8px 14px;
-    background: #4a7cb8;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-
   .container {
-    width: 200mm; /* 210mm - 2*5mm padding */
-    height: 287mm; /* 297mm - 2*5mm padding */
-    border: 1px solid #444;
-    padding: 10px 20px;
+    width: 205mm; /* 210mm - 2*5mm padding */
+    height: 285mm; /* 297mm - 2*5mm padding */
+    /* border: 1px solid #444; */
+    padding: 5px 5px;
     box-sizing: border-box;
     background: white;
     display: flex;
     flex-direction: column;
+    margin-bottom: 20px;
   }
+
+    .container.border-on {
+    border: 1px dashed #444;
+}
 
   /* Cabeçalho */
   .header {
     display: flex;
     align-items: stretch;
-    border-bottom: 1px solid #444;
+    border: 1px solid #444;
+ 
   }
 
   .logo {
@@ -272,10 +252,119 @@
   }
 
 
+  .pdf-button {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 999;
+    padding: 8px 14px;
+    background: #4a7cb8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+    .app-button {
+    position: fixed;
+    top: 45px;
+    right: 10px;
+    z-index: 999;
+    padding: 8px 14px;
+    background: #4a7cb8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+    .email-button {
+    position: fixed;
+    top: 80px;
+    right: 10px;
+    z-index: 999;
+    padding: 8px 14px;
+    background: #4a7cb8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+    .line-button {
+    position: fixed;
+    top: 120px;
+    right: 10px;
+    z-index: 999;
+    padding: 8px 14px;
+    background: #4a7cb8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
   @media print {
-  .no-print {
-    display: none !important;
+  #form-container {
+    width: 210mm;    /* largura exata do A4 */
+    height: 297mm;   /* altura exata do A4 */
+    overflow: hidden;
   }
 }
 
+.page-break {
+  page-break-before: always;
+}
+
+
+/* Switch genérico estilo Bootstrap */
+.check-border {
+  position: fixed; top: 165px; right: 10px; z-index: 999; font-size: 14px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #4a7cb8;
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
 

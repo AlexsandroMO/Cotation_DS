@@ -149,35 +149,35 @@ function selectOption(select) {
     addListeners();
   });
 
-  // Gera PDF da cotação
-    function generatePDF() {
-        const element = document.getElementById('form-container');
-        const addRowBtn = document.getElementById('add-row-btn');
-        const pdfBtn = document.querySelector('.pdf-button');
+function generatePDF() {
+    const element = document.getElementById('form-container');
+    const addRowBtn = document.getElementById('add-row-btn');
+    const pdfBtn = document.querySelector('.pdf-button');
 
-        // Esconder os botões antes de gerar PDF
-        addRowBtn.style.display = 'none';
-        pdfBtn.style.display = 'none';
+    addRowBtn.style.display = 'none';
+    pdfBtn.style.display = 'none';
 
-        const opt = {
-            margin: 0,
-            filename: 'cotacao.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, scrollY: 0 }, // scrollY 0 ajuda capturar topo
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
+    const opt = {
+        margin: 0,
+        filename: 'cotacao.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 2, 
+            scrollY: 0,
+            y: -10 // captura 10px acima do topo para não cortar a borda
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
 
-        html2pdf()
-            .from(element)
-            .set(opt)
-            .save()
-            .then(() => {
-            // Mostrar os botões novamente após salvar o PDF
+    html2pdf()
+        .from(element)
+        .set(opt)
+        .save()
+        .then(() => {
             addRowBtn.style.display = 'inline-block';
             pdfBtn.style.display = 'inline-block';
-            });
-        }
-
+        });
+}
 
 
 // Carregar unidades e preencher selects da coluna UN

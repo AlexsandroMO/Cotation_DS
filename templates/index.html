@@ -11,8 +11,17 @@
 </head>
 <body>
 
-  <button class="pdf-button" onclick="generatePDF()">Gerar PDF</button>
+  <button class="pdf-button" onclick="generatePDF()" id="btn-target">Gerar PDF</button>
   <button class="app-button" onclick="window.location.href='{{ url_for('db_app') }}'">DB_APP</button>
+  <button class="email-button" onclick="window.location.href='{{ url_for('email_list') }}'">DB_EMAIL</button>
+  <button class="line-button" id="add-row-btn">Linha</button>
+
+  <div class="check-border">
+  <label class="switch">
+    <input type="checkbox" id="border-switch">
+    <span class="slider round"></span>
+  </label>
+  </div>
 
 <div class="container" id="form-container">
 
@@ -34,7 +43,7 @@
     <div class="header-quote">
       COTAÇÃO Nº
       <small>DADOS DA COTAÇÃO</small>
-      <div class="date">11/08/2025</div>
+      <div class="date" contenteditable="true">00/00/2000</div>
     </div>
   </div>
 
@@ -69,12 +78,12 @@
     <thead>
       <tr>
         <th class="col-item">ITEM</th>
-        <th class="col-un" contenteditable="true">UN</th>
-        <th class="col-qtd" contenteditable="true">QTD</th>
+        <th class="col-un">UN</th>
+        <th class="col-qtd">QTD</th>
         <th class="col-ncm">NCM</th>
         <th class="col-produto">PRODUTO / MODELO / MARCA</th>
-        <th class="col-unitario" contenteditable="true">UNITÁRIO</th>
-        <th class="col-subtotal" contenteditable="true">SUBTOTAL</th>
+        <th class="col-unitario">UNITÁRIO</th>
+        <th class="col-subtotal" >SUBTOTAL</th>
       </tr>
     </thead>
     <tbody id="table-body">
@@ -147,9 +156,6 @@
     </div>
   </div>
 
-
-    <button id="add-row-btn" style="margin-top: 8px; padding: 6px 12px; font-size: 14px; cursor: pointer;">Adicionar linha</button>
-
 </div>
 
 <!-- Lib PDF -->
@@ -189,6 +195,25 @@
         emailLink.removeAttribute('href');
       });
   });
+
+// Tira e põe borda
+const borderSwitch = document.getElementById('border-switch');
+const container = document.getElementById('form-container');
+
+const btnToggle = document.getElementById('border-switch');
+const btnTarget = document.getElementById('btn-target');
+
+borderSwitch.addEventListener('change', () => {
+    container.classList.toggle('border-on', borderSwitch.checked);
+});
+
+btnToggle.addEventListener('click', () => {
+    if (btnTarget.style.display === 'none') {
+        btnTarget.style.display = 'inline-block'; // mostra
+    } else {
+        btnTarget.style.display = 'none'; // esconde
+    }
+});
 
 </script>
 
