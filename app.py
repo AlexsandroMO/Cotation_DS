@@ -111,7 +111,7 @@ def add():
         ''', (category, product, description, ncm, value, comments))
         conn.commit()
         conn.close()
-        return redirect(url_for('index'))
+        return redirect(url_for('db_app'))
 
     products = get_products()
     units = get_units()
@@ -137,7 +137,7 @@ def edit(item_id):
         ''', (category, product, description, ncm, value, comments, item_id))
         conn.commit()
         conn.close()
-        return redirect(url_for('index'))
+        return redirect(url_for('db_app'))
 
     conn.close()
     products = get_products()
@@ -150,7 +150,7 @@ def delete(item_id):
     conn.execute("DELETE FROM BASE_COTATION WHERE id=?", (item_id,))
     conn.commit()
     conn.close()
-    return redirect(url_for('index'))
+    return redirect(url_for('db_app'))
 
 
 @app.route('/email_db')
